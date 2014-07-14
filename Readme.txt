@@ -1,7 +1,17 @@
-For security project on
+This package is employed on arm embedded linux for data security connection. 
+I intent to use AES-128, CBC mode 
 
 + cross compile
 make CXX=arm-unknown-linux-gnu-g++
+
+
+
+
+
+
+
+
+
 
 
 ===============================================================================
