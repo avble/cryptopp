@@ -1,8 +1,8 @@
 CC=gcc 
-CC=arm-unknown-linux-gnu-gcc 
+#CC=arm-unknown-linux-gnu-gcc 
 
 CXX=g++ 
-CXX=arm-unknown-linux-gnu-g++ 
+#CXX=arm-unknown-linux-gnu-g++ 
 
 LIBS=../../libcryptopp.a -lpthread
 
@@ -18,7 +18,7 @@ CFLAGS += -DHAVE_SYSLOG_H
 OBJS =  Driver.o
 
 all: $(OBJS)
-	$(CXX) -o crypto_test $(OBJS) $(LIBS)
+	$(CXX) -o crypto_cbc_test $(OBJS) $(LIBS)
 
 clean:
 	rm -rf $(OBJS) 

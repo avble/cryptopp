@@ -8,6 +8,8 @@ using CryptoPP::AutoSeededRandomPool;
 using std::cout;
 using std::cerr;
 using std::endl;
+using std::istream;
+#include <fstream>
 
 #include <string>
 using std::string;
@@ -36,21 +38,23 @@ using CryptoPP::CBC_Mode;
 #include "assert.h"
 
 
+// some C library
 #include <stdarg.h>
 #include <getopt.h>
+#include <stdio.h>
 
 int main(int argc, char* argv[])
 {
-	AutoSeededRandomPool prng;
+    AutoSeededRandomPool prng;
 
-	byte key[AES::DEFAULT_KEYLENGTH];
-	prng.GenerateBlock(key, sizeof(key));
+    byte key[AES::DEFAULT_KEYLENGTH];
+    prng.GenerateBlock(key, sizeof(key));
 
-	byte iv[AES::BLOCKSIZE];
-	prng.GenerateBlock(iv, sizeof(iv));
+    byte iv[AES::BLOCKSIZE];
+    prng.GenerateBlock(iv, sizeof(iv));
 
-	string plain = "CBC Mode Test";
-	string cipher, encoded, recovered;
+   // string plain = "CBC Mode Test";
+    string cipher, encoded, recovered;
 
 
     char file_path[256];
@@ -64,9 +68,9 @@ int main(int argc, char* argv[])
 
         static struct option long_option[] =
         {
-            {"--file", required_argument, 0, 'a'},
-            {"--action", required_argument, 0, 'b'},
-            {"--help", required_argument, 0, 'i'},
+            {"file", required_argument, 0, 'a'},
+            {"action", required_argument, 0, 'b'},
+            {"help", required_argument, 0, 'i'},
             {0, 0, 0, 0}
         };
 
@@ -108,110 +112,133 @@ int main(int argc, char* argv[])
 
 
 
-	/*********************************\
-	\*********************************/
+    /*********************************\
+    \*********************************/
 
-	// Pretty print key
-	encoded.clear();
-	StringSource(key, sizeof(key), true,
-		new HexEncoder(
-			new StringSink(encoded)
-		) // HexEncoder
-	); // StringSource
-	cout << "key: " << encoded << endl;
+    // Pretty print key
+    encoded.clear();
+    StringSource(key, sizeof(key), true,
+                 new HexEncoder(
+                     new StringSink(encoded)
+                     ) // HexEncoder
+                 ); // StringSource
+    cout << "key: " << encoded << endl;
 
-	// Pretty print iv
-	encoded.clear();
-	StringSource(iv, sizeof(iv), true,
-		new HexEncoder(
-			new StringSink(encoded)
-		) // HexEncoder
-	); // StringSource
-	cout << "iv: " << encoded << endl;
+    // Pretty print iv
+    encoded.clear();
+    StringSource(iv, sizeof(iv), true,
+                 new HexEncoder(
+                     new StringSink(encoded)
+                     ) // HexEncoder
+                 ); // StringSource
+    cout << "iv: " << encoded << endl;
 
-	/*********************************\
-	\*********************************/
+    /*********************************\
+    \*********************************/
 
-	try
-	{
-		cout << "plain text: " << plain << endl;
 
-		CBC_Mode< AES >::Encryption e;
-		e.SetKeyWithIV(key, sizeof(key), iv);
 
-		// The StreamTransformationFilter removes
-		//  padding as required.
-		StringSource s(plain, true, 
-			new StreamTransformationFilter(e,
-				new StringSink(cipher)
-			) // StreamTransformationFilter
-		); // StringSource
+    char file_buff[1024];
 
-#if 0
-		StreamTransformationFilter filter(e);
-		filter.Put((const byte*)plain.data(), plain.size());
-		filter.MessageEnd();
+    std::ifstream infile(file_path, std::ifstream::binary);
 
-		const size_t ret = filter.MaxRetrievable();
-		cipher.resize(ret);
-		filter.Get((byte*)cipher.data(), cipher.size());
-#endif
-	}
-	catch(const CryptoPP::Exception& e)
-	{
-		cerr << e.what() << endl;
-		exit(1);
-	}
+    cout << "Doing " << infile.is_open() << endl;
 
-	/*********************************\
-	\*********************************/
+    while (infile.read(file_buff, 1024).gcount() > 0)
+    {
 
-	// Pretty print
-	encoded.clear();
-	StringSource(cipher, true,
-		new HexEncoder(
-			new StringSink(encoded)
-		) // HexEncoder
-	); // StringSource
-	cout << "cipher text: " << encoded << endl;
+         cout << "Doing " << endl;
 
-	/*********************************\
-	\*********************************/
 
-	try
-	{
-		CBC_Mode< AES >::Decryption d;
-		d.SetKeyWithIV(key, sizeof(key), iv);
 
-		// The StreamTransformationFilter removes
-		//  padding as required.
-		StringSource s(cipher, true, 
-			new StreamTransformationFilter(d,
-				new StringSink(recovered)
-			) // StreamTransformationFilter
-		); // StringSource
+        std::string plain(file_buff);
+
+
+
+        try
+        {
+            cout << "plain text: " << plain << endl;
+
+            CBC_Mode< AES >::Encryption e;
+            e.SetKeyWithIV(key, sizeof(key), iv);
+
+            // The StreamTransformationFilter removes
+            //  padding as required.
+
+            StringSource s(plain, true,
+                           new StreamTransformationFilter(e,
+                                                          new StringSink(cipher)
+                                                          ) // StreamTransformationFilter
+                           ); // StringSource
 
 #if 0
-		StreamTransformationFilter filter(d);
-		filter.Put((const byte*)cipher.data(), cipher.size());
-		filter.MessageEnd();
+            StreamTransformationFilter filter(e);
+            filter.Put((const byte*)plain.data(), plain.size());
+            filter.MessageEnd();
 
-		const size_t ret = filter.MaxRetrievable();
-		recovered.resize(ret);
-		filter.Get((byte*)recovered.data(), recovered.size());
+            const size_t ret = filter.MaxRetrievable();
+            cipher.resize(ret);
+            filter.Get((byte*)cipher.data(), cipher.size());
+#endif
+        }
+        catch(const CryptoPP::Exception& e)
+        {
+            cerr << e.what() << endl;
+            exit(1);
+        }
+
+        /*********************************\
+    \*********************************/
+
+        // Pretty print
+        encoded.clear();
+        StringSource(cipher, true,
+                     new HexEncoder(
+                         new StringSink(encoded)
+                         ) // HexEncoder
+                     ); // StringSource
+        cout << "cipher text: " << encoded << endl;
+
+        /*********************************\
+    \*********************************/
+
+        try
+        {
+            CBC_Mode< AES >::Decryption d;
+            d.SetKeyWithIV(key, sizeof(key), iv);
+
+            // The StreamTransformationFilter removes
+            //  padding as required.
+            StringSource s(cipher, true,
+                           new StreamTransformationFilter(d,
+                                                          new StringSink(recovered)
+                                                          ) // StreamTransformationFilter
+                           ); // StringSource
+
+#if 0
+            StreamTransformationFilter filter(d);
+            filter.Put((const byte*)cipher.data(), cipher.size());
+            filter.MessageEnd();
+
+            const size_t ret = filter.MaxRetrievable();
+            recovered.resize(ret);
+            filter.Get((byte*)recovered.data(), recovered.size());
 #endif
 
-		cout << "recovered text: " << recovered << endl;
-	}
-	catch(const CryptoPP::Exception& e)
-	{
-		cerr << e.what() << endl;
-		exit(1);
-	}
+            cout << "recovered text: " << recovered << endl;
+        }
+        catch(const CryptoPP::Exception& e)
+        {
+            cerr << e.what() << endl;
+            cout < "ERROR";
+            exit(1);
+        }
 
-	/*********************************\
-	\*********************************/
+    }
 
-	return 0;
+    /*********************************\
+    \*********************************/
+
+    return 0;
 }
 

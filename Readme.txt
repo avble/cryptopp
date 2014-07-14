@@ -1,3 +1,10 @@
+For security project on
+
++ cross compile
+make CXX=arm-unknown-linux-gnu-g++
+
+
+===============================================================================
 Crypto++: a C++ Class Library of Cryptographic Schemes
 Version 5.6.2 - 2/20/2013
 
