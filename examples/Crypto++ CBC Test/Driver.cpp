@@ -68,7 +68,9 @@ int main(int argc, char* argv[])
     prng.GenerateBlock(iv, sizeof(iv));
 
     // string plain = "CBC Mode Test";
-    string encoded, recovered;
+    string encoded;
+
+    string file_out("");
 
 
     char file_path[256];
@@ -76,7 +78,7 @@ int main(int argc, char* argv[])
 
     // default initialization
     strcpy(file_path, "test.dat");
-    action = 1;
+    action = 2;
     while(1)
     {
 
@@ -84,14 +86,20 @@ int main(int argc, char* argv[])
         {
             {"file", required_argument, 0, 'a'},
             {"action", required_argument, 0, 'b'},
-            {"help", required_argument, 0, 'i'},
+            {"out", required_argument, 0, 'c'},
+            {"help", no_argument, 0, 'i'},
+            {"key", required_argument, 0, 'd'},
+            {"iv", required_argument, 0, 'e'},
             {0, 0, 0, 0}
         };
 
 #define HELP \
     printf("Usage: \n ./crypto_cbc_test [OPTIONS] \n"); \
     printf("    file:            file for doing encryption \n"); \
-    printf("    action:          0: encryption, 1: both Default 1 \n"); \
+    printf("    action:          0: encryption, 1: decryption, 2: both Default 2 \n"); \
+    printf("    out:             write out file, default no \n"); \
+    printf("    key:             key in hex string, if it is not specified, automatically generate \n"); \
+    printf("    iv:              Initialization vector, if it is not specified, automatically generate \n"); \
     printf("    help:            help  \n");
 
 
@@ -111,20 +119,34 @@ int main(int argc, char* argv[])
             printf("[Debug] action: %s \n", optarg);
             action = atoi(optarg);
             break;
+        case 'c':
+            printf("[Debug] out: %s \n", optarg);
+            file_out.append(optarg);
+            break;
+        case 'd':
+            printf("[Debug] key: %s \n", optarg);
+            for (int i = 0; i < 16; i++)
+                key[i] = i;
+            /*
+            CryptoPP::ArraySink ar(key, sizeof(key));
+            StringSource(new string(optarg), true, new CryptoPP::HexDecoder( ar ));
+            */
+            break;
+        case 'e':
+            printf("[Debug] iv: %s \n", optarg);
+            for (int i = 0; i < 16; i++)
+                iv[i] = i;
+
+            break;
         case 'i':
             HELP
                     exit(1);
         default:
             printf("invalid option \n");
             exit(1);
-
-
         }
 
-
     }
-
-
 
     /*********************************\
     \*********************************/
@@ -152,23 +174,34 @@ int main(int argc, char* argv[])
 
 
 
+
     char file_buff[2*1024];
 
+
     std::ifstream infile(file_path, std::ifstream::binary);
+
+    std::ofstream outfile;
+
+
+    if (file_out.length() > 0)
+        outfile.open(file_out.c_str());
 
     if (action == 0)
         cout << "[Encryption]:  ";
     else if (action == 1)
+        cout << "[Decryption]:  ";
+    else if (action == 2)
         cout << "[Encryption|Decryption]:  ";
 
 
 
-    cout  << file_path <<  "size: " << fileSize(file_path) << "Bytes" << endl;
+    cout  << file_path <<  "size: " << fileSize(file_path) << " (Bytes)" << endl;
 
     timeCounter tc(true);
 
     CBC_Mode< AES >::Encryption e;
     e.SetKeyWithIV(key, sizeof(key), iv);
+
 
     CBC_Mode< AES >::Decryption d;
     d.SetKeyWithIV(key, sizeof(key), iv);
@@ -176,47 +209,53 @@ int main(int argc, char* argv[])
 
     int count;
     int acc_count = 0;
-    while ((count = infile.read(file_buff, 1024).gcount()) > 0)
+    while ((count = infile.read(file_buff, 16).gcount()) > 0)
     {
-        string cipher;
+        string cipher, recovered;
 
         std::string plain(file_buff, count);
         acc_count += count;
 
-        //cout << "data:" << plain << endl;
-        try
+        if (action == 0 || action == 2)
         {
 
-            // The StreamTransformationFilter removes
-            //  padding as required.
+            //cout << "data:" << plain << endl;
+            try
+            {
 
-            StringSource s(plain, true,
-                           new StreamTransformationFilter(e,
-                                                          new StringSink(cipher)
-                                                          ) // StreamTransformationFilter
-                           ); // StringSource
+                // The StreamTransformationFilter removes
+                //  padding as required.
+
+                StringSource s(plain, true,
+                               new StreamTransformationFilter(e,
+                                                              new StringSink(cipher)
+                                                              ) // StreamTransformationFilter
+                               ); // StringSource
 
 #if 0
-            StreamTransformationFilter filter(e);
-            filter.Put((const byte*)plain.data(), plain.size());
-            filter.MessageEnd();
+                StreamTransformationFilter filter(e);
+                filter.Put((const byte*)plain.data(), plain.size());
+                filter.MessageEnd();
 
-            const size_t ret = filter.MaxRetrievable();
-            cipher.resize(ret);
-            filter.Get((byte*)cipher.data(), cipher.size());
+                const size_t ret = filter.MaxRetrievable();
+                cipher.resize(ret);
+                filter.Get((byte*)cipher.data(), cipher.size());
 #endif
-        }
-        catch(const CryptoPP::Exception& e)
-        {
-            cerr << e.what() << endl;
-            cerr << "ERRO 1" << endl;
-            exit(1);
+            }
+            catch(const CryptoPP::Exception& e)
+            {
+                cerr << e.what() << endl;
+                cerr << "ERRO 1" << endl;
+                exit(1);
+            }
         }
 
-        if (action == 1)
+        if (action == 1 || action == 2)
         {
+            if (action == 1) // just do decryption
+                cipher = plain;
 
-            //cout << "Size: " << acc_count << "," << count << ", " << cipher.size() << endl;
+
 
             /*********************************\
     \*********************************/
@@ -263,13 +302,25 @@ int main(int argc, char* argv[])
                 cout << "ERROR";
                 exit(1);
             }
+
         }
+
+
+        cout << "Size: " << acc_count << "," << count << ", " << cipher.size() << endl;
+
+        if (outfile.is_open())
+            if (action == 0)
+                outfile.write(cipher.c_str(), cipher.size());
+            else
+                outfile.write(recovered.c_str(), recovered.size());
 
     }
 
     tc.Stop();
     printf("Elapsed: %s\n", tc.ToString().c_str());
 
+    if (outfile.is_open())
+        outfile.close();
 
     /*********************************\
     \*********************************/

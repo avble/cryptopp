@@ -2,7 +2,7 @@ CC=gcc
 #CC=arm-unknown-linux-gnu-gcc 
 
 CXX=g++ 
-CXX=arm-unknown-linux-gnu-g++ 
+#CXX=arm-unknown-linux-gnu-g++ 
 
 LIBS=../../libcryptopp.a -lpthread -lrt
 
