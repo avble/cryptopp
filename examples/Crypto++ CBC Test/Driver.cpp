@@ -44,6 +44,19 @@ using CryptoPP::CBC_Mode;
 #include <getopt.h>
 #include <stdio.h>
 
+std::streampos fileSize( const char* filePath ){
+
+    std::streampos fsize = 0;
+    std::ifstream file( filePath, std::ios::binary );
+
+    fsize = file.tellg();
+    file.seekg( 0, std::ios::end );
+    fsize = file.tellg() - fsize;
+    file.close();
+
+    return fsize;
+}
+
 int main(int argc, char* argv[])
 {
     AutoSeededRandomPool prng;
@@ -143,7 +156,14 @@ int main(int argc, char* argv[])
 
     std::ifstream infile(file_path, std::ifstream::binary);
 
-    cout << "[Encryption|Decryption]:  " << file_path << endl;
+    if (action == 0)
+        cout << "[Encryption]:  ";
+    else if (action == 1)
+        cout << "[Encryption|Decryption]:  ";
+
+
+
+    cout  << file_path <<  fileSize(file_path) << endl;
 
     timeCounter tc(true);
 
