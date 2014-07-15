@@ -6,8 +6,13 @@ make CXX=arm-unknown-linux-gnu-g++
 
 
 
-
-
+ ./crypto_cbc [OPTIONS] 
+    file:            file for doing encryption 
+    action:          0: encryption, 1: decryption, Default 0 
+    out:             write out file, default no 
+    key:             key in hex string, if it is not specified, automatically generate 
+    iv:              Initialization vector, if it is not specified, automatically generate 
+    help:            help
 
 
 

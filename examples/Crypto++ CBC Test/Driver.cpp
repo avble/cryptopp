@@ -39,6 +39,8 @@ using CryptoPP::CBC_Mode;
 
 #include "TimeCounter.h"
 
+#include "files.h"
+
 // some C library
 #include <stdarg.h>
 #include <getopt.h>
@@ -206,6 +208,25 @@ int main(int argc, char* argv[])
     CBC_Mode< AES >::Decryption d;
     d.SetKeyWithIV(key, sizeof(key), iv);
 
+
+    // testing
+    if (action == 0)
+    { // encryption
+        CryptoPP::FileSource file(file_path, true,
+                                  new StreamTransformationFilter(e,
+                                                                 new CryptoPP::FileSink(file_out.c_str())
+                                                                 ) // StreamTransformationFilter
+                                  ); // StringSource
+    } else if (action == 1)
+    { // decryption
+        CryptoPP::FileSource file(file_path, true,
+                                  new StreamTransformationFilter(d,
+                                                                 new CryptoPP::FileSink(file_out.c_str())
+                                                                 ) // StreamTransformationFilter
+                                  ); // StringSource
+    }
+
+    return 0;
 
     int count;
     int acc_count = 0;
