@@ -54,7 +54,7 @@ int main(int argc, char* argv[])
     byte iv[AES::BLOCKSIZE];
     prng.GenerateBlock(iv, sizeof(iv));
 
-   // string plain = "CBC Mode Test";
+    // string plain = "CBC Mode Test";
     string encoded, recovered;
 
 
@@ -63,7 +63,7 @@ int main(int argc, char* argv[])
 
     // default initialization
     strcpy(file_path, "test.dat");
-    action = 2;
+    action = 1;
     while(1)
     {
 
@@ -78,7 +78,7 @@ int main(int argc, char* argv[])
 #define HELP \
     printf("Usage: \n ./crypto_cbc_test [OPTIONS] \n"); \
     printf("    file:            file for doing encryption \n"); \
-    printf("    action:          0: encryption, 1: decryption, 2:both, Default 2 \n"); \
+    printf("    action:          0: encryption, 1: both Default 1 \n"); \
     printf("    help:            help  \n");
 
 
@@ -193,54 +193,57 @@ int main(int argc, char* argv[])
             exit(1);
         }
 
-        cout << "Size: " << acc_count << "," << count << ", " << cipher.size() << endl;
-
-        /*********************************\
-    \*********************************/
-#if 0
-        // Pretty print
-        encoded.clear();
-        StringSource(cipher, true,
-                     new HexEncoder(
-                         new StringSink(encoded)
-                         ) // HexEncoder
-                     ); // StringSource
-        // cout << "cipher text: " << encoded << endl;
-#endif
-
-        /*********************************\
-    \*********************************/
-
-        try
+        if (action == 1)
         {
 
-            // The StreamTransformationFilter removes
-            //  padding as required.
-            StringSource s(cipher, true,
-                           new StreamTransformationFilter(d,
-                                                          new StringSink(recovered)
-                                                          ) // StreamTransformationFilter
-                           ); // StringSource
+            //cout << "Size: " << acc_count << "," << count << ", " << cipher.size() << endl;
 
+            /*********************************\
+    \*********************************/
 #if 0
-            StreamTransformationFilter filter(d);
-            filter.Put((const byte*)cipher.data(), cipher.size());
-            filter.MessageEnd();
-
-            const size_t ret = filter.MaxRetrievable();
-            recovered.resize(ret);
-            filter.Get((byte*)recovered.data(), recovered.size());
+            // Pretty print
+            encoded.clear();
+            StringSource(cipher, true,
+                         new HexEncoder(
+                             new StringSink(encoded)
+                             ) // HexEncoder
+                         ); // StringSource
+            // cout << "cipher text: " << encoded << endl;
 #endif
 
-           // cout << "recovered text: " << recovered << endl;
-        }
-        catch(const CryptoPP::Exception& e)
-        {
-            cerr << e.what() << endl;
-            cout << "ERROR";
-            exit(1);
-        }
+            /*********************************\
+    \*********************************/
 
+            try
+            {
+
+                // The StreamTransformationFilter removes
+                //  padding as required.
+                StringSource s(cipher, true,
+                               new StreamTransformationFilter(d,
+                                                              new StringSink(recovered)
+                                                              ) // StreamTransformationFilter
+                               ); // StringSource
+
+#if 0
+                StreamTransformationFilter filter(d);
+                filter.Put((const byte*)cipher.data(), cipher.size());
+                filter.MessageEnd();
+
+                const size_t ret = filter.MaxRetrievable();
+                recovered.resize(ret);
+                filter.Get((byte*)recovered.data(), recovered.size());
+#endif
+
+                // cout << "recovered text: " << recovered << endl;
+            }
+            catch(const CryptoPP::Exception& e)
+            {
+                cerr << e.what() << endl;
+                cout << "ERROR";
+                exit(1);
+            }
+        }
 
     }
 
