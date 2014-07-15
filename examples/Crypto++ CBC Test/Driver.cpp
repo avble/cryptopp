@@ -163,7 +163,7 @@ int main(int argc, char* argv[])
 
 
 
-    cout  << file_path <<  fileSize(file_path) << endl;
+    cout  << file_path <<  "size: " << fileSize(file_path) << endl;
 
     timeCounter tc(true);
 
