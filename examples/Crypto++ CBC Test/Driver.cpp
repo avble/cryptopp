@@ -37,6 +37,7 @@ using CryptoPP::CBC_Mode;
 
 #include "assert.h"
 
+#include "TimeCounter.h"
 
 // some C library
 #include <stdarg.h>
@@ -54,14 +55,14 @@ int main(int argc, char* argv[])
     prng.GenerateBlock(iv, sizeof(iv));
 
    // string plain = "CBC Mode Test";
-    string cipher, encoded, recovered;
+    string encoded, recovered;
 
 
     char file_path[256];
     int action;
 
     // default initialization
-    strcpy(file_path, "test.data");
+    strcpy(file_path, "test.dat");
     action = 2;
     while(1)
     {
@@ -138,29 +139,33 @@ int main(int argc, char* argv[])
 
 
 
-    char file_buff[1024];
+    char file_buff[2*1024];
 
     std::ifstream infile(file_path, std::ifstream::binary);
 
-    cout << "Doing " << infile.is_open() << endl;
+    cout << "[Encryption|Decryption]:  " << file_path << endl;
 
-    while (infile.read(file_buff, 1024).gcount() > 0)
+    timeCounter tc(true);
+
+    CBC_Mode< AES >::Encryption e;
+    e.SetKeyWithIV(key, sizeof(key), iv);
+
+    CBC_Mode< AES >::Decryption d;
+    d.SetKeyWithIV(key, sizeof(key), iv);
+
+
+    int count;
+    int acc_count = 0;
+    while ((count = infile.read(file_buff, 1024).gcount()) > 0)
     {
+        string cipher;
 
-         cout << "Doing " << endl;
+        std::string plain(file_buff, count);
+        acc_count += count;
 
-
-
-        std::string plain(file_buff);
-
-
-
+        //cout << "data:" << plain << endl;
         try
         {
-            cout << "plain text: " << plain << endl;
-
-            CBC_Mode< AES >::Encryption e;
-            e.SetKeyWithIV(key, sizeof(key), iv);
 
             // The StreamTransformationFilter removes
             //  padding as required.
@@ -184,12 +189,15 @@ int main(int argc, char* argv[])
         catch(const CryptoPP::Exception& e)
         {
             cerr << e.what() << endl;
+            cerr << "ERRO 1" << endl;
             exit(1);
         }
 
+        cout << "Size: " << acc_count << "," << count << ", " << cipher.size() << endl;
+
         /*********************************\
     \*********************************/
-
+#if 0
         // Pretty print
         encoded.clear();
         StringSource(cipher, true,
@@ -197,15 +205,14 @@ int main(int argc, char* argv[])
                          new StringSink(encoded)
                          ) // HexEncoder
                      ); // StringSource
-        cout << "cipher text: " << encoded << endl;
+        // cout << "cipher text: " << encoded << endl;
+#endif
 
         /*********************************\
     \*********************************/
 
         try
         {
-            CBC_Mode< AES >::Decryption d;
-            d.SetKeyWithIV(key, sizeof(key), iv);
 
             // The StreamTransformationFilter removes
             //  padding as required.
@@ -225,16 +232,21 @@ int main(int argc, char* argv[])
             filter.Get((byte*)recovered.data(), recovered.size());
 #endif
 
-            cout << "recovered text: " << recovered << endl;
+           // cout << "recovered text: " << recovered << endl;
         }
         catch(const CryptoPP::Exception& e)
         {
             cerr << e.what() << endl;
-            cout < "ERROR";
+            cout << "ERROR";
             exit(1);
         }
 
+
     }
+
+    tc.Stop();
+    printf("Elapsed: %s\n", tc.ToString().c_str());
+
 
     /*********************************\
     \*********************************/
